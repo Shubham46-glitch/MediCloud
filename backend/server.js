@@ -1,5 +1,6 @@
 import app from './src/app.js';
 import { env } from './src/config/env.js';
+import logger from './src/utils/logger.js';
 
 const PORT = env.PORT || 5000;
 
@@ -7,15 +8,7 @@ let server;
 
 try {
   server = app.listen(PORT, () => {
-    console.log(`===============================================`);
-    console.log(` MediCloud Backend API Service`);
-    console.log(` Status: Running`);
-    console.log(` Environment: ${env.NODE_ENV}`);
-    console.log(` Port: ${PORT}`);
-    console.log(` URL: http://localhost:${PORT}`);
-    console.log(` Health: http://localhost:${PORT}/api/health`);
-    console.log(` Allowed Frontend: ${env.FRONTEND_URL}`);
-    console.log(`===============================================`);
+    logger.info('MediCloud API started', { environment: env.NODE_ENV, port: PORT });
   });
 
   server.on('error', (error) => {
@@ -24,33 +17,33 @@ try {
     }
 
     if (error.code === 'EADDRINUSE') {
-      console.error(`[Fatal Startup Error] Port ${PORT} is already in use.`);
+      logger.error('MediCloud API could not bind to port', { port: PORT, errorType: 'EADDRINUSE' });
     } else {
-      console.error(`[Fatal Startup Error] ${error.message}`);
+      logger.error('MediCloud API listener failed', { errorType: error.name || 'UnknownError' });
     }
     process.exit(1);
   });
 } catch (startupError) {
-  console.error(`[Fatal Startup Error] Failed to initialize server:`, startupError);
+  logger.error('MediCloud API startup failed', { errorType: startupError.name || 'UnknownError' });
   process.exit(1);
 }
 
 // Graceful shutdown handling
-const shutdown = (signal) => {
-  console.log(`\nReceived ${signal}. Gracefully shutting down MediCloud backend...`);
+const shutdown = (signal, exitCode = 0) => {
+  logger.info('MediCloud API shutdown requested', { signal });
   if (server) {
     server.close(() => {
-      console.log('HTTP server closed. Exiting process.');
-      process.exit(0);
+      logger.info('MediCloud API stopped');
+      process.exit(exitCode);
     });
 
     // Force exit after 5 seconds if connections linger
     setTimeout(() => {
-      console.error('Could not close connections in time, forcefully shutting down.');
+      logger.error('MediCloud API shutdown timed out');
       process.exit(1);
     }, 5000);
   } else {
-    process.exit(0);
+    process.exit(exitCode);
   }
 };
 
@@ -58,10 +51,11 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
 process.on('unhandledRejection', (reason) => {
-  console.error('[Unhandled Rejection]', reason);
+  logger.error('Unhandled rejection; shutting down', { errorType: reason?.name || typeof reason });
+  shutdown('unhandledRejection', 1);
 });
 
 process.on('uncaughtException', (err) => {
-  console.error('[Uncaught Exception]', err);
-  process.exit(1);
+  logger.error('Uncaught exception; shutting down', { errorType: err?.name || 'UnknownError' });
+  shutdown('uncaughtException', 1);
 });

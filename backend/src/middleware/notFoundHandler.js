@@ -8,7 +8,7 @@ export const notFoundHandler = (req, res) => {
     status: 404,
     error: {
       code: 'ROUTE_NOT_FOUND',
-      message: `Cannot ${req.method} ${req.originalUrl} - Route not found on this server`,
+      message: `Cannot ${req.method} ${req.path} - Route not found on this server`,
     },
   });
 };

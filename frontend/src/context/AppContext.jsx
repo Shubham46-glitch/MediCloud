@@ -14,6 +14,7 @@ export const AppProvider = ({ children }) => {
   const [specialties, setSpecialties] = useState([]);
   const [dataLoading, setDataLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const [pendingRegistrationProfile, setPendingRegistrationProfile] = useState(null);
 
   const showToast = (message, type = 'success') => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -29,6 +30,7 @@ export const AppProvider = ({ children }) => {
     setAppointments([]);
     setDoctors([]);
     setSpecialties([]);
+    setPendingRegistrationProfile(null);
   };
 
   useEffect(() => {
@@ -106,12 +108,21 @@ export const AppProvider = ({ children }) => {
   }, [currentUser, currentRole]);
 
   const login = async (email, password) => {
-    const result = await apiRequest('/auth/login', { method: 'POST', body: { email, password } });
-    setAccessToken(result.token);
-    const profile = await apiRequest('/auth/me');
-    setCurrentUser(profile.user);
-    setCurrentRole(profile.user.role);
-    return profile.user;
+    try {
+      const result = await apiRequest('/auth/login', {
+        method: 'POST',
+        body: { email, password, ...(pendingRegistrationProfile || {}) },
+      });
+      setAccessToken(result.token);
+      const profile = await apiRequest('/auth/me');
+      setCurrentUser(profile.user);
+      setCurrentRole(profile.user.role);
+      setPendingRegistrationProfile(null);
+      return profile.user;
+    } catch (error) {
+      setPendingRegistrationProfile(null);
+      throw error;
+    }
   };
 
   const registerPatient = async (form) => {
@@ -129,12 +140,30 @@ export const AppProvider = ({ children }) => {
     });
     if (result.token) {
       setAccessToken(result.token);
-      const profile = await apiRequest('/auth/me');
-      setCurrentUser(profile.user);
-      setCurrentRole(profile.user.role);
+      setCurrentUser(result.user);
+      setCurrentRole(result.user.role);
+      setPendingRegistrationProfile(null);
+    } else {
+      setPendingRegistrationProfile({
+        name: `${form.firstName} ${form.lastName}`.trim(),
+        phone: form.phone,
+        dateOfBirth: form.dob || undefined,
+        gender: form.gender,
+        bloodGroup: form.bloodGroup,
+      });
     }
     return result;
   };
+
+  const confirmRegistration = (email, code) => apiRequest('/auth/confirm', {
+    method: 'POST',
+    body: { email, code },
+  });
+
+  const resendRegistrationCode = (email) => apiRequest('/auth/resend-confirmation', {
+    method: 'POST',
+    body: { email },
+  });
 
   const logout = async () => {
     try { if (getAccessToken()) await apiRequest('/auth/logout', { method: 'POST' }); }
@@ -224,7 +253,8 @@ export const AppProvider = ({ children }) => {
   };
 
   const value = {
-    currentUser, currentRole, authLoading, dataLoading, login, registerPatient, logout,
+    currentUser, currentRole, authLoading, dataLoading, login, registerPatient,
+    confirmRegistration, resendRegistrationCode, logout,
     doctors, appointments, specialties, bookAppointment, rescheduleAppointment,
     cancelAppointment, updateAppointmentStatus, addDoctor, updateDoctor,
     toggleDoctorStatus, updateDoctorSlots, addSpecialty, updateProfile,

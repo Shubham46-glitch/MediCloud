@@ -70,8 +70,24 @@ export const RegisterPage = () => {
     setSubmitError('');
     try {
       const result = await registerPatient(formData);
-      if (result.token) navigate('/patient/dashboard', { replace: true });
-      else navigate('/login', { replace: true, state: { registered: true } });
+      if (result.token) {
+        navigate('/patient/dashboard', { replace: true });
+        return;
+      }
+      if (result.needsConfirmation) {
+        navigate('/verify-email', {
+          replace: true,
+          state: {
+            email: formData.email.trim(),
+            deliveryDestination: result.deliveryDestination,
+          },
+        });
+      } else {
+        navigate('/login', {
+          replace: true,
+          state: { registered: true, email: formData.email.trim() },
+        });
+      }
     } catch (error) {
       setSubmitError(error.message || 'Registration failed. Please try again.');
       showToast(error.message || 'Registration failed.', 'error');
@@ -197,7 +213,7 @@ export const RegisterPage = () => {
                 isLoading={isLoading}
                 rightIcon={ArrowRight}
               >
-                Complete Registration & Open Dashboard
+                Create Account
               </Button>
             </div>
           </form>

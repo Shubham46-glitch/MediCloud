@@ -11,14 +11,16 @@ export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, showToast } = useApp();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(location.state?.email || '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (event) => {
     event.preventDefault();
     setError('');
+    setNeedsVerification(false);
     if (!email.trim() || !password) {
       setError('Enter your email address and password.');
       return;
@@ -31,6 +33,7 @@ export const LoginPage = () => {
       navigate(location.state?.from || destination, { replace: true });
     } catch (failure) {
       setError(failure.message || 'Sign in failed. Please try again.');
+      setNeedsVerification(failure.code === 'EMAIL_NOT_VERIFIED');
       showToast(failure.message || 'Sign in failed.', 'error');
     } finally {
       setIsLoading(false);
@@ -48,12 +51,14 @@ export const LoginPage = () => {
         <p className="mt-1 text-center text-xs text-slate-500">Your account determines which portal you can access.</p>
       </div>
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md px-4">
-        {location.state?.registered && <div role="status" className="mb-4 rounded-xl border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">Account created. If email verification is enabled, verify your address before signing in.</div>}
+        {location.state?.confirmed && <div role="status" className="mb-4 rounded-xl border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">Email confirmed. Sign in to finish setting up your patient profile.</div>}
+        {location.state?.registered && !location.state?.confirmed && <div role="status" className="mb-4 rounded-xl border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">If your account requires email confirmation, follow the code instructions sent to your address.</div>}
         <div className="bg-white py-8 px-6 sm:px-8 rounded-2xl shadow-md border border-slate-200/90">
           <form onSubmit={handleLogin} className="space-y-4" noValidate>
             <Input label="Email Address" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@domain.com" icon={Mail} required />
             <Input label="Password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} icon={Lock} required />
             {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
+            {needsVerification && <Link to="/verify-email" state={{ email }} className="block text-sm font-semibold text-teal-700 hover:underline">Enter a confirmation code or request a new one</Link>}
             <Button type="submit" variant="primary" className="w-full justify-center py-2.5" isLoading={isLoading} rightIcon={ArrowRight}>Sign In</Button>
           </form>
           <div className="text-center text-xs text-slate-500 mt-6 pt-4 border-t border-slate-100">

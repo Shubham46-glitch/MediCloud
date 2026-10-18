@@ -11,6 +11,7 @@ import { LandingPage } from './pages/landing/LandingPage';
 import { DoctorsDirectoryPage } from './pages/doctors/DoctorsDirectoryPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
+import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
 
 // Patient Pages
 import { PatientDashboard } from './pages/patient/PatientDashboard';
@@ -43,6 +44,7 @@ function App() {
           {/* Authentication Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
 
           {/* Patient Portal */}
           <Route element={<ProtectedRoute roles={['patient']} />}>

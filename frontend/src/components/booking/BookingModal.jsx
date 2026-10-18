@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Clock, Video, Building2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
@@ -6,23 +6,18 @@ import { Input } from '../common/Input';
 import { useApp } from '../../context/AppContext';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
+const dateAtMidnight = new Date();
+const MIN_BOOKING_DATE = new Date(dateAtMidnight.getTime() - dateAtMidnight.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+dateAtMidnight.setDate(dateAtMidnight.getDate() + 1);
+const DEFAULT_BOOKING_DATE = new Date(dateAtMidnight.getTime() - dateAtMidnight.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
 export const BookingModal = ({ isOpen, onClose, doctor }) => {
-  const { bookAppointment, appointments, currentUser } = useApp();
+  const { bookAppointment, appointments } = useApp();
 
-  // Get tomorrow's date formatted as YYYY-MM-DD
-  const getDefaultDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
-  };
-
-  const [date, setDate] = useState(getDefaultDate());
-  const [selectedSlot, setSelectedSlot] = useState('');
+  const [date, setDate] = useState(DEFAULT_BOOKING_DATE);
+  const [selectedSlot, setSelectedSlot] = useState(doctor?.availableSlots?.[0] || '');
   const [type, setType] = useState('In-Person Consultation');
   const [reason, setReason] = useState('');
-  const [notes, setNotes] = useState('');
-  const [patientName, setPatientName] = useState(currentUser?.name || '');
-  const [patientPhone, setPatientPhone] = useState(currentUser?.phone || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedApt, setConfirmedApt] = useState(null);
   const [slotError, setSlotError] = useState('');
@@ -39,29 +34,6 @@ export const BookingModal = ({ isOpen, onClose, doctor }) => {
     );
   };
 
-  // Reset or initialize when doctor or open changes
-  useEffect(() => {
-    if (isOpen && doctor) {
-      const defaultD = getDefaultDate();
-      setDate(defaultD);
-      const firstUnbooked = doctor.availableSlots?.find((slot) => !appointments.some(
-        (apt) =>
-          apt.doctorId === doctor.id &&
-          apt.date === defaultD &&
-          apt.time === slot &&
-          apt.status !== 'cancelled' &&
-          apt.status !== 'rejected'
-      ));
-      setSelectedSlot(firstUnbooked || doctor.availableSlots?.[0] || '');
-      setReason('General Health Consultation');
-      setNotes('');
-      setConfirmedApt(null);
-      setSlotError('');
-      setPatientName(currentUser?.name || '');
-      setPatientPhone(currentUser?.phone || '');
-    }
-  }, [isOpen, doctor, currentUser, appointments]);
-
   if (!doctor) return null;
 
   const handleDateChange = (newDate) => {
@@ -71,7 +43,7 @@ export const BookingModal = ({ isOpen, onClose, doctor }) => {
     setSelectedSlot(firstUnbooked || '');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSlotError('');
 
@@ -89,33 +61,19 @@ export const BookingModal = ({ isOpen, onClose, doctor }) => {
       return;
     }
 
+    const dayName = new Date(`${date}T12:00:00`).toLocaleDateString('en-US', { weekday: 'long' });
+    if (doctor.availableDays?.length && !doctor.availableDays.includes(dayName)) {
+      setSlotError(`This doctor is not available on ${dayName}.`);
+      return;
+    }
     setIsSubmitting(true);
-
-    setTimeout(() => {
-      const result = bookAppointment({
-        doctorId: doctor.id,
-        doctorName: doctor.name,
-        doctorSpecialty: doctor.specialty,
-        doctorImage: doctor.image,
-        doctorHospital: doctor.hospital,
-        date,
-        time: selectedSlot,
-        type,
-        reason: reason || 'General Medical Consultation',
-        fee: doctor.fee,
-        notes,
-        patientName: patientName || currentUser?.name || 'Patient',
-        patientPhone: patientPhone || currentUser?.phone || '+1 (555) 234-5678'
-      });
-
+    try {
+      const result = await bookAppointment({ doctorId: doctor.id, date, time: selectedSlot, type, reason: reason.trim() });
+      if (result.success && result.appointment) setConfirmedApt(result.appointment);
+      else setSlotError(result.error || 'The appointment could not be booked.');
+    } finally {
       setIsSubmitting(false);
-
-      if (result.success) {
-        setConfirmedApt(result.appointment);
-      } else {
-        setSlotError(result.error);
-      }
-    }, 400);
+    }
   };
 
   return (
@@ -135,9 +93,7 @@ export const BookingModal = ({ isOpen, onClose, doctor }) => {
 
           <div>
             <h4 className="text-xl font-bold text-slate-900">Appointment Scheduled!</h4>
-            <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-              Your appointment with <span className="font-semibold text-slate-800">{confirmedApt.doctorName}</span> is confirmed in the demo system.
-            </p>
+            <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">Your request with <span className="font-semibold text-slate-800">{confirmedApt.doctorName}</span> has been saved with status <strong>{confirmedApt.status}</strong>.</p>
           </div>
 
           <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 text-left space-y-3 max-w-lg mx-auto">
@@ -207,7 +163,7 @@ export const BookingModal = ({ isOpen, onClose, doctor }) => {
               <input
                 type="date"
                 value={date}
-                min={new Date().toISOString().split('T')[0]}
+                min={MIN_BOOKING_DATE}
                 onChange={(e) => handleDateChange(e.target.value)}
                 required
                 className="w-full bg-white text-slate-900 text-sm rounded-lg border border-slate-300 py-2.5 px-3.5 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/15 outline-none cursor-pointer"
@@ -297,28 +253,10 @@ export const BookingModal = ({ isOpen, onClose, doctor }) => {
                 <Video className={`w-5 h-5 ${type === 'Video Consultation' ? 'text-teal-600' : 'text-slate-400'}`} />
                 <div>
                   <span className="text-xs font-bold block">Video Telehealth</span>
-                  <span className="text-2xs text-slate-500">HD encrypted video link</span>
+                  <span className="text-2xs text-slate-500">Video visit details are provided after confirmation</span>
                 </div>
               </button>
             </div>
-          </div>
-
-          {/* Patient Details & Reason */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input
-              label="Patient Name"
-              value={patientName}
-              onChange={(e) => setPatientName(e.target.value)}
-              placeholder="e.g. Sarah Jenkins"
-              required
-            />
-            <Input
-              label="Contact Phone"
-              value={patientPhone}
-              onChange={(e) => setPatientPhone(e.target.value)}
-              placeholder="+1 (555) 000-0000"
-              required
-            />
           </div>
 
           <div>

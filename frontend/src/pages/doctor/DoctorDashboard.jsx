@@ -5,8 +5,6 @@ import {
   Clock,
   CheckCircle,
   Users,
-  Award,
-  AlertCircle,
   Settings
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -18,19 +16,20 @@ import { Modal } from '../../components/common/Modal';
 import { Badge } from '../../components/common/Badge';
 import { formatDate } from '../../utils/formatters';
 
+const actualToday = new Date().toISOString().slice(0, 10);
+
 export const DoctorDashboard = () => {
   const navigate = useNavigate();
-  const { currentUser, appointments, updateAppointmentStatus } = useApp();
+  const { currentUser, doctors, appointments, updateAppointmentStatus } = useApp();
 
   const [selectedPatientApt, setSelectedPatientApt] = useState(null);
 
   // Filter doctor's appointments
-  const doctorId = currentUser?.id || 'doc-1';
+  const doctorId = currentUser?.doctorId || currentUser?.userId || currentUser?.id;
+  const doctorProfile = doctors.find((doctor) => doctor.id === doctorId);
   const myAppointments = appointments.filter((apt) => apt.doctorId === doctorId);
 
-  // Support today's actual date and the demo seed date
-  const actualToday = new Date().toISOString().split('T')[0];
-  const isToday = (date) => date === actualToday || date === '2026-10-15';
+  const isToday = (date) => date === actualToday;
 
   const todayAppointments = myAppointments.filter(
     (apt) => isToday(apt.date) && apt.status !== 'cancelled'
@@ -59,23 +58,19 @@ export const DoctorDashboard = () => {
       {/* Doctor Header Banner */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex items-center gap-4 sm:gap-5">
-          <img
-            src={currentUser?.avatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300'}
-            alt={currentUser?.name}
-            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-teal-500 shadow-xs"
-          />
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-teal-500 bg-teal-50 text-teal-800 text-xl font-bold grid place-items-center" aria-hidden="true">{currentUser?.name?.slice(0, 1) || '?'}</div>
           <div>
             <div className="flex items-center gap-2">
               <span className="text-2xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-teal-50 text-teal-800 border border-teal-200">
                 Attending Physician
               </span>
-              <span className="text-2xs text-slate-400">License: {currentUser?.licenseNumber || 'MD-NY-842918'}</span>
+              {doctorProfile?.licenseNumber && <span className="text-2xs text-slate-400">License: {doctorProfile.licenseNumber}</span>}
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
-              {currentUser?.name || 'Dr. Marcus Vance'}
+              {currentUser?.name || 'Doctor'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              {currentUser?.title || 'MD, FACC - Senior Cardiologist'} • {currentUser?.hospital || 'St. Jude Heart Institute'}
+              {[doctorProfile?.title, doctorProfile?.specialty, doctorProfile?.hospital].filter(Boolean).join(' • ') || 'Doctor profile details are not available.'}
             </p>
           </div>
         </div>
@@ -111,8 +106,8 @@ export const DoctorDashboard = () => {
           value={pendingAppointments.length}
           subtitle="Awaiting doctor confirmation"
           icon={Clock}
-          trend={pendingAppointments.length > 0 ? `${pendingAppointments.length} action required` : 'All clear'}
-          trendPositive={pendingAppointments.length === 0}
+          trend={pendingAppointments.length > 0 ? `${pendingAppointments.length} action required` : 'No pending items'}
+          trendPositive={null}
         />
         <StatsCard
           title="Upcoming Schedule"
@@ -121,12 +116,10 @@ export const DoctorDashboard = () => {
           icon={Calendar}
         />
         <StatsCard
-          title="Patient Rating"
-          value="4.9 / 5.0"
-          subtitle="Based on 142 reviews"
-          icon={Award}
-          trend="+98% positive"
-          trendPositive={true}
+          title="Patient Records"
+          value={new Set(myAppointments.map((appointment) => appointment.patientId)).size}
+          subtitle="Patients with appointments"
+          icon={Users}
         />
       </div>
 
@@ -140,7 +133,7 @@ export const DoctorDashboard = () => {
                 {todayAppointments.length}
               </span>
             </h3>
-            <p className="text-xs text-slate-500">Scheduled consultations for today ({formatDate(todayStr)})</p>
+            <p className="text-xs text-slate-500">Scheduled consultations for today ({formatDate(actualToday)})</p>
           </div>
         </div>
 
@@ -206,7 +199,7 @@ export const DoctorDashboard = () => {
         )}
       </div>
 
-      {/* Patient Details Modal (Fictional Demo Data) */}
+      {/* Patient Details Modal */}
       {selectedPatientApt && (
         <Modal
           isOpen={!!selectedPatientApt}
@@ -216,19 +209,14 @@ export const DoctorDashboard = () => {
           maxWidth="max-w-xl"
         >
           <div className="space-y-5">
-            <div className="bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-900 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-sky-600 shrink-0" />
-              <span>Fictional sample medical profile for demonstration purposes only.</span>
-            </div>
-
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <span className="text-slate-400 block font-semibold text-2xs uppercase">Age & Gender</span>
-                <span className="font-bold text-slate-800 mt-0.5 block">{selectedPatientApt.patientAge || 32} years, {selectedPatientApt.patientGender || 'Female'}</span>
+                <span className="text-slate-400 block font-semibold text-2xs uppercase">Patient demographics</span>
+                <span className="font-bold text-slate-800 mt-0.5 block">{selectedPatientApt.patientGender || 'Not provided'}</span>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
                 <span className="text-slate-400 block font-semibold text-2xs uppercase">Contact Phone</span>
-                <span className="font-bold text-slate-800 mt-0.5 block">{selectedPatientApt.patientPhone}</span>
+                <span className="font-bold text-slate-800 mt-0.5 block">{selectedPatientApt.patientPhone || 'Not provided'}</span>
               </div>
             </div>
 

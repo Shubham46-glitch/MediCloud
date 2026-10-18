@@ -8,12 +8,13 @@ import {
   Stethoscope,
   LogOut,
   ChevronRight,
-  User
+  User,
+  FolderOpen,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export const Sidebar = () => {
-  const { currentUser, currentRole, switchRole, logout } = useApp();
+  const { currentUser, currentRole, logout } = useApp();
   const navigate = useNavigate();
 
   const getNavLinks = () => {
@@ -37,6 +38,7 @@ export const Sidebar = () => {
           { label: 'My Appointments', path: '/patient/appointments', icon: CalendarCheck },
           { label: 'Find Doctors', path: '/doctors', icon: Stethoscope },
           { label: 'Health Profile', path: '/patient/profile', icon: User },
+          { label: 'Medical Documents', path: '/patient/documents', icon: FolderOpen },
         ];
     }
   };
@@ -49,11 +51,9 @@ export const Sidebar = () => {
         {/* User Mini Profile Card */}
         {currentUser && (
           <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 flex items-center gap-3">
-            <img
-              src={currentUser.avatar}
-              alt={currentUser.name}
-              className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
-            />
+            <div className="w-10 h-10 rounded-full border border-slate-200 shrink-0 bg-teal-50 text-teal-700 grid place-items-center font-bold" aria-hidden="true">
+              {currentUser.name?.slice(0, 1)?.toUpperCase() || <User className="w-4 h-4" />}
+            </div>
             <div className="min-w-0 flex-1">
               <h5 className="text-xs font-bold text-slate-900 truncate">{currentUser.name}</h5>
               <div className="flex items-center gap-1.5 mt-0.5">
@@ -96,66 +96,18 @@ export const Sidebar = () => {
         </nav>
       </div>
 
-      {/* Bottom Switcher & Sign Out */}
+      {/* Sign out */}
       <div className="p-4 border-t border-slate-100 space-y-3 bg-slate-50/50">
-        <div className="text-2xs font-bold uppercase tracking-wider text-slate-400">
-          Demo Role Switcher
-        </div>
-        <div className="grid grid-cols-3 gap-1">
-          <button
-            type="button"
-            onClick={() => {
-              switchRole('patient');
-              navigate('/patient/dashboard');
-            }}
-            className={`py-1.5 px-1 rounded-md text-2xs font-bold text-center border transition-colors ${
-              currentRole === 'patient'
-                ? 'bg-teal-600 text-white border-teal-600'
-                : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'
-            }`}
-          >
-            Patient
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              switchRole('doctor');
-              navigate('/doctor/dashboard');
-            }}
-            className={`py-1.5 px-1 rounded-md text-2xs font-bold text-center border transition-colors ${
-              currentRole === 'doctor'
-                ? 'bg-teal-600 text-white border-teal-600'
-                : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'
-            }`}
-          >
-            Doctor
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              switchRole('admin');
-              navigate('/admin/dashboard');
-            }}
-            className={`py-1.5 px-1 rounded-md text-2xs font-bold text-center border transition-colors ${
-              currentRole === 'admin'
-                ? 'bg-teal-600 text-white border-teal-600'
-                : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'
-            }`}
-          >
-            Admin
-          </button>
-        </div>
-
         <button
           type="button"
           onClick={() => {
             logout();
-            navigate('/login');
+            navigate('/login', { replace: true });
           }}
           className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-100 cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5" />
-          <span>Exit Demo Session</span>
+          <span>Sign out</span>
         </button>
       </div>
     </aside>

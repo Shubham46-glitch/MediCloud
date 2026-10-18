@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, MapPin, Building2, Calendar, ShieldCheck } from 'lucide-react';
+import { Star, MapPin, Building2, Calendar } from 'lucide-react';
 import { Button } from './Button';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -12,12 +12,7 @@ export const DoctorCard = ({ doctor, onBook, onViewDetails }) => {
       <div className="p-5 pb-0">
         <div className="flex items-start gap-4">
           <div className="relative shrink-0">
-            <img
-              src={doctor.image}
-              alt={doctor.name}
-              className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-sm group-hover:scale-102 transition-transform duration-200 bg-slate-100"
-              loading="lazy"
-            />
+            {doctor.image ? <img src={doctor.image} alt={doctor.name} className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-sm group-hover:scale-102 transition-transform duration-200 bg-slate-100" loading="lazy" /> : <div className="w-20 h-20 rounded-2xl border-2 border-white shadow-sm bg-teal-50 text-teal-800 text-xl font-bold grid place-items-center">{doctor.name?.slice(0, 1) || '?'}</div>}
             {isAvailable ? (
               <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white" title="Accepting Patients" />
             ) : (
@@ -32,7 +27,7 @@ export const DoctorCard = ({ doctor, onBook, onViewDetails }) => {
               </span>
               {doctor.featured && (
                 <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                  <ShieldCheck className="w-3 h-3" /> Top Rated
+                  Featured
                 </span>
               )}
             </div>
@@ -42,15 +37,16 @@ export const DoctorCard = ({ doctor, onBook, onViewDetails }) => {
             </h3>
             <p className="text-xs text-slate-500 truncate mt-0.5">{doctor.title}</p>
 
-            <div className="flex items-center gap-2 mt-2">
+            {(Number.isFinite(doctor.rating) || Number.isFinite(doctor.experience)) && <div className="flex items-center gap-2 mt-2">
+              {Number.isFinite(doctor.rating) && <>
               <div className="flex items-center gap-1 text-xs font-bold text-slate-800">
                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 <span>{doctor.rating}</span>
               </div>
-              <span className="text-xs text-slate-400">({doctor.reviewCount} reviews)</span>
-              <span className="text-slate-300">•</span>
-              <span className="text-xs font-medium text-slate-600">{doctor.experience} yrs exp</span>
-            </div>
+              {Number.isFinite(doctor.reviewCount) && <span className="text-xs text-slate-400">({doctor.reviewCount} reviews)</span>}
+              </>}
+              {Number.isFinite(doctor.experience) && <span className="text-xs font-medium text-slate-600">{doctor.experience} yrs experience</span>}
+            </div>}
           </div>
         </div>
       </div>
@@ -72,7 +68,7 @@ export const DoctorCard = ({ doctor, onBook, onViewDetails }) => {
         {doctor.availableSlots && doctor.availableSlots.length > 0 && (
           <div className="pt-2">
             <div className="flex items-center justify-between text-2xs uppercase tracking-wider font-semibold text-slate-400 mb-1.5">
-              <span>Next Available Slots</span>
+              <span>Available Times</span>
               <span className="text-teal-600 lowercase font-normal">{doctor.availableSlots.length} slots</span>
             </div>
             <div className="flex flex-wrap gap-1.5">

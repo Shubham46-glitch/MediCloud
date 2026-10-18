@@ -18,7 +18,7 @@ export const StatsCard = ({
           {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
           {trend && (
             <p className={`text-xs font-medium mt-1.5 flex items-center gap-1 ${trendPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
-              <span>{trendPositive ? '↑' : '↓'}</span>
+              {trendPositive !== null && <span>{trendPositive ? '↑' : '↓'}</span>}
               <span>{trend}</span>
             </p>
           )}

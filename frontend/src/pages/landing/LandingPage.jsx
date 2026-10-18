@@ -15,6 +15,7 @@ import { useApp } from '../../context/AppContext';
 import { DoctorCard } from '../../components/common/DoctorCard';
 import { BookingModal } from '../../components/booking/BookingModal';
 import { Button } from '../../components/common/Button';
+import { formatCurrency } from '../../utils/formatters';
 
 export const LandingPage = () => {
   const navigate = useNavigate();
@@ -39,7 +40,7 @@ export const LandingPage = () => {
   }, [location]);
 
   // Featured Doctors
-  const featuredDoctors = doctors.filter((doc) => doc.featured || doc.rating >= 4.85).slice(0, 4);
+  const featuredDoctors = doctors.filter((doc) => doc.featured).slice(0, 4);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -331,7 +332,7 @@ export const LandingPage = () => {
             </div>
           </div>
 
-          {/* Visual Showcase Card */}
+          {/* Live directory snapshot from the configured backend */}
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-lg space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
@@ -339,49 +340,28 @@ export const LandingPage = () => {
                   <Activity className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900">MediCloud Realtime Scheduling</h4>
-                  <p className="text-2xs text-teal-600 font-semibold">Active Demonstration</p>
+                  <h4 className="text-sm font-bold text-slate-900">Doctor Directory</h4>
+                  <p className="text-2xs text-teal-600 font-semibold">{featuredDoctors.length} clinicians listed</p>
                 </div>
               </div>
               <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
-                Online
+                {featuredDoctors.length ? 'Available' : 'No data'}
               </span>
             </div>
 
             <div className="space-y-3">
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm">
-                    MV
-                  </div>
-                  <div>
-                    <h5 className="text-xs font-bold text-slate-800">Dr. Marcus Vance (Cardiology)</h5>
-                    <p className="text-2xs text-slate-500">St. Jude Heart Institute • $150</p>
-                  </div>
+              {featuredDoctors.slice(0, 2).map((doctor) => <div key={doctor.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm shrink-0">{doctor.name?.slice(0, 1) || '?'}</div>
+                  <div className="min-w-0"><h5 className="text-xs font-bold text-slate-800 truncate">{doctor.name} ({doctor.specialty})</h5><p className="text-2xs text-slate-500 truncate">{doctor.hospital} · {formatCurrency(doctor.fee)}</p></div>
                 </div>
-                <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                  Confirmed
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm">
-                    ER
-                  </div>
-                  <div>
-                    <h5 className="text-xs font-bold text-slate-800">Dr. Elena Rostova (Dermatology)</h5>
-                    <p className="text-2xs text-slate-500">Aura Skin Clinic • $120</p>
-                  </div>
-                </div>
-                <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800">
-                  Pending
-                </span>
-              </div>
+                <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-teal-100 text-teal-800 shrink-0">{doctor.status}</span>
+              </div>)}
+              {!featuredDoctors.length && <p className="text-sm text-slate-600">Doctor directory data is not available right now.</p>}
             </div>
 
             <div className="pt-2 text-center text-xs text-slate-400">
-              Interactive demo with role-based switching (Patient, Doctor, Admin)
+              Directory data is provided by the MediCloud API.
             </div>
           </div>
         </div>

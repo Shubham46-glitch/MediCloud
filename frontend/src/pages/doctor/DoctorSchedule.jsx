@@ -1,32 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Clock, Plus, Trash2, Calendar, Save } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/common/Button';
 
 export const DoctorSchedule = () => {
-  const { currentUser, doctors, updateDoctorSlots, showToast } = useApp();
+  const { currentUser, doctors } = useApp();
+  const doctor = doctors.find((item) => item.id === (currentUser?.doctorId || currentUser?.userId));
+  if (!doctor) return <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600">Your doctor profile and availability could not be loaded.</div>;
+  return <DoctorScheduleEditor key={doctor.id} doctor={doctor} />;
+};
 
-  // Active doctor
-  const doctor = doctors.find((d) => d.id === (currentUser?.id || 'doc-1')) || doctors[0];
-
-  const [slots, setSlots] = useState(
-    doctor?.availableSlots || ['09:00 AM', '10:00 AM', '11:30 AM', '02:00 PM', '03:30 PM', '04:30 PM']
-  );
-
-  const [workingDays, setWorkingDays] = useState(
-    doctor?.availableDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-  );
+const DoctorScheduleEditor = ({ doctor }) => {
+  const { updateDoctorSlots, showToast } = useApp();
+  const [slots, setSlots] = useState(doctor.availableSlots || []);
+  const [workingDays, setWorkingDays] = useState(doctor.availableDays || []);
 
   const [newSlotTime, setNewSlotTime] = useState('01:00 PM');
   const [isSaving, setIsSaving] = useState(false);
-
-  // Sync state if active doctor changes
-  useEffect(() => {
-    if (doctor) {
-      setSlots(doctor.availableSlots || ['09:00 AM', '10:00 AM', '11:30 AM', '02:00 PM', '03:30 PM', '04:30 PM']);
-      setWorkingDays(doctor.availableDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
-    }
-  }, [doctor]);
 
   const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -64,13 +54,10 @@ export const DoctorSchedule = () => {
     showToast(`Removed ${slotToRemove}`, 'info');
   };
 
-  const handleSaveAll = () => {
+  const handleSaveAll = async () => {
     setIsSaving(true);
-    setTimeout(() => {
-      updateDoctorSlots(doctor.id, slots, workingDays);
-      setIsSaving(false);
-      showToast('Weekly schedule & availability hours updated successfully', 'success');
-    }, 350);
+    try { await updateDoctorSlots(doctor.id, slots, workingDays); }
+    finally { setIsSaving(false); }
   };
 
   return (

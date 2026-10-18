@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Activity, Mail, Lock, Phone, ArrowRight, Info } from 'lucide-react';
+import { Activity, Mail, Lock, Phone, ArrowRight } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
@@ -8,7 +8,7 @@ import { Select } from '../../components/common/Select';
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
-  const { registerPatient } = useApp();
+  const { registerPatient, showToast } = useApp();
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -24,6 +24,7 @@ export const RegisterPage = () => {
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -49,8 +50,8 @@ export const RegisterPage = () => {
 
     if (!formData.password) {
       errs.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      errs.password = 'Must be at least 6 characters';
+    } else if (formData.password.length < 8) {
+      errs.password = 'Must be at least 8 characters';
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -61,16 +62,22 @@ export const RegisterPage = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     setIsLoading(true);
-    setTimeout(() => {
+    setSubmitError('');
+    try {
+      const result = await registerPatient(formData);
+      if (result.token) navigate('/patient/dashboard', { replace: true });
+      else navigate('/login', { replace: true, state: { registered: true } });
+    } catch (error) {
+      setSubmitError(error.message || 'Registration failed. Please try again.');
+      showToast(error.message || 'Registration failed.', 'error');
+    } finally {
       setIsLoading(false);
-      registerPatient(formData);
-      navigate('/patient/dashboard');
-    }, 450);
+    }
   };
 
   return (
@@ -89,19 +96,11 @@ export const RegisterPage = () => {
           Create Your Patient Account
         </h2>
         <p className="mt-1 text-center text-xs text-slate-500">
-          Book and manage certified specialist consultations with real-time slot scheduling
+          Create an account to book and manage healthcare appointments
         </p>
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-xl px-4">
-        {/* Demo Warning */}
-        <div className="mb-5 bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-900 flex items-start gap-2.5">
-          <Info className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
-          <div className="leading-relaxed">
-            <span className="font-bold">Demo Notice:</span> Form submissions update frontend local state only. Real medical information is never stored or transmitted.
-          </div>
-        </div>
-
         <div className="bg-white py-8 px-6 sm:px-10 rounded-2xl shadow-md border border-slate-200/90 space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -109,7 +108,7 @@ export const RegisterPage = () => {
                 label="First Name"
                 value={formData.firstName}
                 onChange={(e) => handleChange('firstName', e.target.value)}
-                placeholder="Sarah"
+                placeholder="Your first name"
                 error={errors.firstName}
                 required
               />
@@ -117,7 +116,7 @@ export const RegisterPage = () => {
                 label="Last Name"
                 value={formData.lastName}
                 onChange={(e) => handleChange('lastName', e.target.value)}
-                placeholder="Jenkins"
+                placeholder="Your last name"
                 error={errors.lastName}
                 required
               />
@@ -129,7 +128,7 @@ export const RegisterPage = () => {
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleChange('email', e.target.value)}
-                placeholder="sarah.jenkins@example.com"
+                placeholder="name@example.com"
                 icon={Mail}
                 error={errors.email}
                 required
@@ -190,6 +189,7 @@ export const RegisterPage = () => {
             </div>
 
             <div className="pt-2">
+              {submitError && <p role="alert" className="mb-3 text-sm text-rose-700">{submitError}</p>}
               <Button
                 type="submit"
                 variant="primary"

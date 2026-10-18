@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, AlertCircle } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
@@ -10,7 +10,7 @@ export const DoctorPatients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatient, setSelectedPatient] = useState(null);
 
-  const doctorId = currentUser?.id || 'doc-1';
+  const doctorId = currentUser?.doctorId || currentUser?.userId || currentUser?.id;
 
   // Get unique patients associated with this doctor from appointments
   const patientsMap = {};
@@ -23,8 +23,7 @@ export const DoctorPatients = () => {
           name: apt.patientName,
           email: apt.patientEmail,
           phone: apt.patientPhone,
-          age: apt.patientAge || 32,
-          gender: apt.patientGender || 'Female',
+          gender: apt.patientGender,
           lastVisit: apt.date,
           lastReason: apt.reason,
           consultationCount: 1,
@@ -43,9 +42,9 @@ export const DoctorPatients = () => {
   const patientList = Object.values(patientsMap).filter(
     (p) =>
       !searchTerm ||
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.lastReason.toLowerCase().includes(searchTerm.toLowerCase())
+      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.lastReason?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -77,7 +76,6 @@ export const DoctorPatients = () => {
               <tr className="border-b border-slate-200 bg-slate-50/70 text-2xs uppercase tracking-wider font-bold text-slate-500">
                 <th className="py-3 px-4">Patient Name</th>
                 <th className="py-3 px-4">Contact</th>
-                <th className="py-3 px-4">Demographics</th>
                 <th className="py-3 px-4">Last Visit</th>
                 <th className="py-3 px-4">Chief Complaint</th>
                 <th className="py-3 px-4 text-right">Actions</th>
@@ -92,11 +90,11 @@ export const DoctorPatients = () => {
                 </tr>
               ) : (
                 patientList.map((patient) => (
-                  <tr key={patient.email} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={patient.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-teal-100 text-teal-800 font-bold flex items-center justify-center shrink-0">
-                          {patient.name.charAt(0)}
+                          {patient.name?.charAt(0) || '?'}
                         </div>
                         <div>
                           <div className="font-bold text-slate-900">{patient.name}</div>
@@ -105,10 +103,9 @@ export const DoctorPatients = () => {
                       </div>
                     </td>
                     <td className="py-3.5 px-4 text-slate-600 font-medium">
-                      {patient.phone}
+                      {patient.phone || 'Not provided'}
                     </td>
                     <td className="py-3.5 px-4 text-slate-600">
-                      {patient.gender}, {patient.age}y
                     </td>
                     <td className="py-3.5 px-4 text-slate-600">
                       {formatDate(patient.lastVisit)}
@@ -140,15 +137,10 @@ export const DoctorPatients = () => {
           isOpen={!!selectedPatient}
           onClose={() => setSelectedPatient(null)}
           title={`Clinical History: ${selectedPatient.name}`}
-          subtitle={`${selectedPatient.gender}, ${selectedPatient.age} years old • ${selectedPatient.consultationCount} Consultations`}
+          subtitle={`${selectedPatient.consultationCount} Consultations`}
           maxWidth="max-w-xl"
         >
           <div className="space-y-4">
-            <div className="bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-900 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-sky-600 shrink-0" />
-              <span>Simulated demo patient record. No real patient data is stored.</span>
-            </div>
-
             <div className="space-y-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Consultation History Records

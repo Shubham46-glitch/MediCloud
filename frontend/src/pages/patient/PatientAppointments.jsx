@@ -19,16 +19,16 @@ export const PatientAppointments = () => {
 
   // Filter patient's appointments
   const myAppointments = appointments.filter(
-    (apt) => !currentUser || apt.patientId === currentUser.id || apt.patientEmail === currentUser.email
+    (apt) => currentUser && (apt.patientId === currentUser.userId || apt.patientId === currentUser.id)
   );
 
   const filteredAppointments = useMemo(() => {
     return myAppointments.filter((apt) => {
       const matchesSearch =
         !searchTerm ||
-        apt.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        apt.doctorSpecialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        apt.reason.toLowerCase().includes(searchTerm.toLowerCase());
+        apt.doctorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        apt.doctorSpecialty?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        apt.reason?.toLowerCase().includes(searchTerm.toLowerCase());
 
       if (!matchesSearch) return false;
 

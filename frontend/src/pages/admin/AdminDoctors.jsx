@@ -61,15 +61,15 @@ export const AdminDoctors = () => {
   const openAddDoctor = () => {
     setDoctorForm({
       name: '',
-      title: 'MD - Specialist',
-      specialty: specialties[0]?.name || 'Cardiology',
-      hospital: 'Metro Central Hospital',
-      location: 'New York, NY',
-      fee: 140,
-      experience: 8,
-      bio: 'Board-certified medical practitioner with extensive clinical experience.',
-      education: 'Johns Hopkins School of Medicine',
-      availableSlots: '09:00 AM, 11:00 AM, 02:00 PM, 04:00 PM'
+      title: '',
+      specialty: specialties[0]?.name || '',
+      hospital: '',
+      location: '',
+      fee: '',
+      experience: '',
+      bio: '',
+      education: '',
+      availableSlots: ''
     });
     setIsAddModalOpen(true);
   };
@@ -90,7 +90,7 @@ export const AdminDoctors = () => {
     });
   };
 
-  const handleDoctorSubmit = (e) => {
+  const handleDoctorSubmit = async (e) => {
     e.preventDefault();
     const slotsArray = doctorForm.availableSlots
       .split(',')
@@ -98,31 +98,30 @@ export const AdminDoctors = () => {
       .filter(Boolean);
 
     if (editingDoctor) {
-      updateDoctor(editingDoctor.id, {
+      const result = await updateDoctor(editingDoctor.id, {
         ...doctorForm,
         fee: Number(doctorForm.fee),
         experience: Number(doctorForm.experience),
         availableSlots: slotsArray
       });
-      setEditingDoctor(null);
+      if (result.success) setEditingDoctor(null);
     } else {
-      addDoctor({
+      const result = await addDoctor({
         ...doctorForm,
         fee: Number(doctorForm.fee),
         experience: Number(doctorForm.experience),
         availableSlots: slotsArray,
-        rating: 5.0,
-        reviewCount: 1,
         featured: false
       });
-      setIsAddModalOpen(false);
+      if (result) setIsAddModalOpen(false);
     }
   };
 
-  const handleSpecialtySubmit = (e) => {
+  const handleSpecialtySubmit = async (e) => {
     e.preventDefault();
     if (!specForm.name.trim()) return;
-    addSpecialty(specForm.name, specForm.description, specForm.icon);
+    const result = await addSpecialty(specForm.name, specForm.description, specForm.icon);
+    if (!result.success) return;
     setSpecForm({ name: '', description: '', icon: 'Stethoscope' });
     setIsAddSpecialtyOpen(false);
   };
@@ -219,7 +218,7 @@ export const AdminDoctors = () => {
                     <th className="py-3 px-4">Doctor</th>
                     <th className="py-3 px-4">Specialty & Affiliation</th>
                     <th className="py-3 px-4">Consultation Fee</th>
-                    <th className="py-3 px-4">Rating & Experience</th>
+                    <th className="py-3 px-4">Experience</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
@@ -238,11 +237,7 @@ export const AdminDoctors = () => {
                         <tr key={doc.id} className="hover:bg-slate-50/80 transition-colors">
                           <td className="py-3.5 px-4">
                             <div className="flex items-center gap-3">
-                              <img
-                                src={doc.image}
-                                alt={doc.name}
-                                className="w-9 h-9 rounded-xl object-cover border border-slate-200"
-                              />
+                              <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-800 grid place-items-center font-bold" aria-hidden="true">{doc.name?.slice(0, 1)?.toUpperCase() || '?'}</div>
                               <div>
                                 <div className="font-bold text-slate-900">{doc.name}</div>
                                 <div className="text-2xs text-slate-400">{doc.title}</div>
@@ -257,8 +252,7 @@ export const AdminDoctors = () => {
                             {formatCurrency(doc.fee)}
                           </td>
                           <td className="py-3.5 px-4 text-slate-600">
-                            <div>★ {doc.rating} ({doc.reviewCount || 0})</div>
-                            <div className="text-2xs text-slate-400">{doc.experience} years experience</div>
+                            <div>{doc.experience} years experience</div>
                           </td>
                           <td className="py-3.5 px-4">
                             <Badge status={doc.status} />
@@ -313,7 +307,7 @@ export const AdminDoctors = () => {
                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">{spec.description}</p>
               </div>
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-400 font-semibold">
-                <span>ACTIVE CLINICAL DEPARTMENT</span>
+                <span>SPECIALTY</span>
                 <span className="text-teal-700 font-bold">
                   {doctors.filter((d) => d.specialty.toLowerCase() === spec.name.toLowerCase()).length} Doctors
                 </span>

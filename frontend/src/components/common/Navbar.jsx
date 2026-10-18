@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Activity, Menu, X, Shield, User, Stethoscope, ChevronDown, LogOut, LayoutDashboard } from 'lucide-react';
+import { Activity, Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from './Button';
 
 export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { currentUser, currentRole, switchRole, logout } = useApp();
+  const { currentUser, currentRole, logout } = useApp();
 
   const navLinks = [
     { label: 'Home', path: '/' },
@@ -18,14 +17,6 @@ export const Navbar = () => {
     { label: 'How It Works', path: '/#how-it-works' },
     { label: 'About', path: '/#about' }
   ];
-
-  const handleRoleSwitch = (role) => {
-    switchRole(role);
-    setRoleDropdownOpen(false);
-    if (role === 'patient') navigate('/patient/dashboard');
-    else if (role === 'doctor') navigate('/doctor/dashboard');
-    else if (role === 'admin') navigate('/admin/dashboard');
-  };
 
   const getDashboardPath = () => {
     if (currentRole === 'doctor') return '/doctor/dashboard';
@@ -35,11 +26,7 @@ export const Navbar = () => {
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all">
-      {/* Demo Notification Bar */}
-      <div className="bg-teal-900 text-teal-100 text-2xs py-1 px-4 text-center flex items-center justify-center gap-2">
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-        <span>MediCloud Demo Environment • Live Interactive Simulation (No real medical data collected)</span>
-      </div>
+      {import.meta.env.VITE_APP_ENV !== 'production' && <div className="bg-amber-50 text-amber-900 text-2xs py-1 px-4 text-center">Local development environment. Backend provider mode is configured on the server.</div>}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18">
@@ -76,66 +63,6 @@ export const Navbar = () => {
 
           {/* Right Header Actions */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Quick Demo Role Switcher */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200/70 text-slate-700 transition-colors border border-slate-200"
-              >
-                <span className="text-slate-400 uppercase text-2xs">Role:</span>
-                <span className="capitalize text-teal-700">{currentRole || 'Guest'}</span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-
-              {roleDropdownOpen && (
-                <div
-                  className="absolute right-0 mt-1.5 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95"
-                  onMouseLeave={() => setRoleDropdownOpen(false)}
-                >
-                  <div className="px-3 py-1.5 text-2xs uppercase tracking-wider font-bold text-slate-400 border-b border-slate-100">
-                    Switch Active Demo Role
-                  </div>
-                  <button
-                    onClick={() => handleRoleSwitch('patient')}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-left hover:bg-teal-50/60 ${
-                      currentRole === 'patient' ? 'text-teal-700 bg-teal-50 font-bold' : 'text-slate-700'
-                    }`}
-                  >
-                    <User className="w-4 h-4 text-teal-600" />
-                    <div>
-                      <span>Patient View</span>
-                      <span className="text-2xs text-slate-400 block font-normal">Sarah Jenkins</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleRoleSwitch('doctor')}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-left hover:bg-teal-50/60 ${
-                      currentRole === 'doctor' ? 'text-teal-700 bg-teal-50 font-bold' : 'text-slate-700'
-                    }`}
-                  >
-                    <Stethoscope className="w-4 h-4 text-teal-600" />
-                    <div>
-                      <span>Doctor View</span>
-                      <span className="text-2xs text-slate-400 block font-normal">Dr. Marcus Vance</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleRoleSwitch('admin')}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-left hover:bg-teal-50/60 ${
-                      currentRole === 'admin' ? 'text-teal-700 bg-teal-50 font-bold' : 'text-slate-700'
-                    }`}
-                  >
-                    <Shield className="w-4 h-4 text-teal-600" />
-                    <div>
-                      <span>Admin View</span>
-                      <span className="text-2xs text-slate-400 block font-normal">Eleanor Vance</span>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-
             {/* Auth / Dashboard Buttons */}
             {currentUser ? (
               <div className="flex items-center gap-2">
@@ -200,45 +127,6 @@ export const Navbar = () => {
           </nav>
 
           <div className="pt-3 border-t border-slate-100 space-y-3">
-            <div className="text-2xs font-bold uppercase tracking-wider text-slate-400 px-3">
-              Switch Role View
-            </div>
-            <div className="grid grid-cols-3 gap-1.5 px-2">
-              <button
-                onClick={() => {
-                  handleRoleSwitch('patient');
-                  setMobileMenuOpen(false);
-                }}
-                className={`py-1.5 px-2 rounded text-xs font-semibold text-center border ${
-                  currentRole === 'patient' ? 'bg-teal-50 border-teal-300 text-teal-800' : 'bg-slate-50 border-slate-200 text-slate-700'
-                }`}
-              >
-                Patient
-              </button>
-              <button
-                onClick={() => {
-                  handleRoleSwitch('doctor');
-                  setMobileMenuOpen(false);
-                }}
-                className={`py-1.5 px-2 rounded text-xs font-semibold text-center border ${
-                  currentRole === 'doctor' ? 'bg-teal-50 border-teal-300 text-teal-800' : 'bg-slate-50 border-slate-200 text-slate-700'
-                }`}
-              >
-                Doctor
-              </button>
-              <button
-                onClick={() => {
-                  handleRoleSwitch('admin');
-                  setMobileMenuOpen(false);
-                }}
-                className={`py-1.5 px-2 rounded text-xs font-semibold text-center border ${
-                  currentRole === 'admin' ? 'bg-teal-50 border-teal-300 text-teal-800' : 'bg-slate-50 border-slate-200 text-slate-700'
-                }`}
-              >
-                Admin
-              </button>
-            </div>
-
             {currentUser ? (
               <div className="pt-2 flex flex-col gap-2">
                 <Button

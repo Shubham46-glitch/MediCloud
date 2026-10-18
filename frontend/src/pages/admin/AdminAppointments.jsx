@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, AlertCircle } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
@@ -7,7 +7,7 @@ import { Modal } from '../../components/common/Modal';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 
 export const AdminAppointments = () => {
-  const { appointments, doctors, updateAppointmentStatus, cancelAppointment } = useApp();
+  const { appointments, doctors, updateAppointmentStatus } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -16,11 +16,14 @@ export const AdminAppointments = () => {
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((apt) => {
+      const patientName = apt.patientName || '';
+      const doctorName = apt.doctorName || '';
+      const appointmentId = apt.id || '';
       const matchesSearch =
         !searchTerm ||
-        apt.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        apt.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        apt.id.toLowerCase().includes(searchTerm.toLowerCase());
+        patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        appointmentId.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus = !statusFilter || apt.status === statusFilter;
       const matchesDoctor = !doctorFilter || apt.doctorId === doctorFilter;
@@ -29,11 +32,9 @@ export const AdminAppointments = () => {
     });
   }, [appointments, searchTerm, statusFilter, doctorFilter]);
 
-  const handleStatusChange = (aptId, newStatus) => {
-    updateAppointmentStatus(aptId, newStatus);
-    if (selectedApt) {
-      setSelectedApt({ ...selectedApt, status: newStatus });
-    }
+  const handleStatusChange = async (aptId, newStatus) => {
+    const result = await updateAppointmentStatus(aptId, newStatus);
+    if (result.success && selectedApt) setSelectedApt({ ...selectedApt, status: newStatus });
   };
 
   return (

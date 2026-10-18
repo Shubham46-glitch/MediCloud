@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, Filter, Stethoscope, MapPin, X, Calendar } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -13,66 +13,47 @@ export const DoctorsDirectoryPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { doctors, specialties } = useApp();
 
-  const queryParam = searchParams.get('q') || '';
-  const specialtyParam = searchParams.get('specialty') || '';
-  const locationParam = searchParams.get('location') || '';
-
-  const [searchTerm, setSearchTerm] = useState(queryParam);
-  const [selectedSpecialty, setSelectedSpecialty] = useState(specialtyParam);
-  const [selectedLocation, setSelectedLocation] = useState(locationParam);
+  const searchTerm = searchParams.get('q') || '';
+  const selectedSpecialty = searchParams.get('specialty') || '';
+  const selectedLocation = searchParams.get('location') || '';
   const [sortBy, setSortBy] = useState('recommended'); // recommended, rating, fee-asc, fee-desc, experience
 
   const [bookingDoctor, setBookingDoctor] = useState(null);
   const [selectedDoctorDetails, setSelectedDoctorDetails] = useState(null);
 
-  // Synchronize state when URL searchParams change
-  useEffect(() => {
-    const q = searchParams.get('q') || '';
-    const spec = searchParams.get('specialty') || '';
-    const loc = searchParams.get('location') || '';
-    const docId = searchParams.get('id');
-
-    setSearchTerm(q);
-    setSelectedSpecialty(spec);
-    setSelectedLocation(loc);
-
-    if (docId) {
-      const match = doctors.find((d) => d.id === docId);
-      if (match) {
-        setSelectedDoctorDetails(match);
-      }
-    }
-  }, [searchParams, doctors]);
+  const updateFilter = (key, value) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set(key, value);
+    else next.delete(key);
+    setSearchParams(next, { replace: true });
+  };
 
   // Filter & Sort Logic
   const filteredDoctors = useMemo(() => {
     return doctors.filter((doc) => {
       const matchesSearch =
         !searchTerm ||
-        doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.hospital.toLowerCase().includes(searchTerm.toLowerCase());
+        (doc.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (doc.specialty || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (doc.hospital || '').toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesSpecialty =
-        !selectedSpecialty || doc.specialty.toLowerCase() === selectedSpecialty.toLowerCase();
+        !selectedSpecialty || (doc.specialty || '').toLowerCase() === selectedSpecialty.toLowerCase();
 
       const matchesLocation =
-        !selectedLocation || doc.location.toLowerCase().includes(selectedLocation.toLowerCase());
+        !selectedLocation || (doc.location || '').toLowerCase().includes(selectedLocation.toLowerCase());
 
       return matchesSearch && matchesSpecialty && matchesLocation;
     }).sort((a, b) => {
-      if (sortBy === 'rating') return b.rating - a.rating;
-      if (sortBy === 'fee-asc') return a.fee - b.fee;
-      if (sortBy === 'fee-desc') return b.fee - a.fee;
-      if (sortBy === 'experience') return b.experience - a.experience;
+      if (sortBy === 'rating') return (b.rating ?? -1) - (a.rating ?? -1);
+      if (sortBy === 'fee-asc') return (a.fee ?? Number.MAX_SAFE_INTEGER) - (b.fee ?? Number.MAX_SAFE_INTEGER);
+      if (sortBy === 'fee-desc') return (b.fee ?? -1) - (a.fee ?? -1);
+      if (sortBy === 'experience') return (b.experience ?? -1) - (a.experience ?? -1);
       return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
     });
   }, [doctors, searchTerm, selectedSpecialty, selectedLocation, sortBy]);
 
   const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedSpecialty('');
-    setSelectedLocation('');
     setSortBy('recommended');
     setSearchParams({});
   };
@@ -86,11 +67,11 @@ export const DoctorsDirectoryPage = () => {
         <div className="mb-8">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-700 mb-1">
             <Stethoscope className="w-4 h-4" />
-            <span>Verified Medical Specialists</span>
+            <span>Medical Specialists</span>
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Find Doctors & Specialists</h1>
           <p className="text-sm text-slate-600 mt-1">
-            Search top certified clinicians across specialties and book appointments with real-time slot confirmation.
+            Browse doctor profiles by specialty and location, then request an appointment.
           </p>
         </div>
 
@@ -104,7 +85,7 @@ export const DoctorsDirectoryPage = () => {
                 type="text"
                 placeholder="Search by doctor, clinic, or keyword..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => updateFilter('q', e.target.value)}
                 className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 text-sm focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-500/15 outline-none transition-all placeholder:text-slate-400"
               />
             </div>
@@ -113,7 +94,7 @@ export const DoctorsDirectoryPage = () => {
             <div className="md:col-span-3">
               <select
                 value={selectedSpecialty}
-                onChange={(e) => setSelectedSpecialty(e.target.value)}
+                onChange={(e) => updateFilter('specialty', e.target.value)}
                 className="w-full py-2.5 px-3.5 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 text-sm focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-500/15 outline-none transition-all cursor-pointer"
               >
                 <option value="">All Specialties</option>
@@ -132,7 +113,7 @@ export const DoctorsDirectoryPage = () => {
                 type="text"
                 placeholder="Filter by city/state..."
                 value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
+                onChange={(e) => updateFilter('location', e.target.value)}
                 className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 text-sm focus:bg-white focus:border-teal-600 focus:ring-2 focus:ring-teal-500/15 outline-none transition-all placeholder:text-slate-400"
               />
             </div>
@@ -242,7 +223,7 @@ export const DoctorsDirectoryPage = () => {
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
                 <span className="text-slate-400 font-semibold block uppercase text-2xs">Languages Spoken</span>
                 <span className="font-bold text-slate-800 mt-1 block">
-                  {selectedDoctorDetails.languages?.join(', ') || 'English'}
+                  {selectedDoctorDetails.languages?.join(', ') || 'Not provided'}
                 </span>
               </div>
             </div>

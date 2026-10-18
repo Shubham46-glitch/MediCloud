@@ -16,12 +16,12 @@ import { formatDate, formatCurrency } from '../../utils/formatters';
 
 export const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { doctors, appointments, specialties, toggleDoctorStatus } = useApp();
+  const { doctors, appointments, specialties, toggleDoctorStatus, currentUser } = useApp();
 
   const activeDoctorsCount = doctors.filter((d) => d.status === 'active').length;
   const pendingAppointmentsCount = appointments.filter((a) => a.status === 'pending').length;
-  const confirmedAppointmentsCount = appointments.filter((a) => a.status === 'confirmed').length;
-  const completedAppointmentsCount = appointments.filter((a) => a.status === 'completed').length;
+  const _confirmedAppointmentsCount = appointments.filter((a) => a.status === 'confirmed').length;
+  const _completedAppointmentsCount = appointments.filter((a) => a.status === 'completed').length;
 
   return (
     <div className="space-y-8">
@@ -32,7 +32,7 @@ export const AdminDashboard = () => {
             <span className="text-2xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-teal-50 text-teal-800 border border-teal-200">
               Clinical Administration
             </span>
-            <span className="text-2xs text-slate-400">System Operator: Eleanor Vance</span>
+            <span className="text-2xs text-slate-400">System Operator: {currentUser?.name || 'Administrator'}</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
             Hospital System Control Center
@@ -66,24 +66,24 @@ export const AdminDashboard = () => {
           value={activeDoctorsCount}
           subtitle={`Out of ${doctors.length} registered clinicians`}
           icon={Stethoscope}
-          trend="+12% this quarter"
-          trendPositive={true}
+          trend="Current directory count"
+          trendPositive={null}
         />
         <StatsCard
           title="Total Consultations"
           value={appointments.length}
           subtitle="System booking transactions"
           icon={CalendarCheck}
-          trend="+18.4% monthly volume"
-          trendPositive={true}
+          trend="Loaded appointment records"
+          trendPositive={null}
         />
         <StatsCard
           title="Pending Approvals"
           value={pendingAppointmentsCount}
           subtitle="Awaiting clinician triage"
           icon={Clock}
-          trend={pendingAppointmentsCount > 0 ? 'Requires attention' : 'Optimal'}
-          trendPositive={pendingAppointmentsCount === 0}
+          trend={pendingAppointmentsCount > 0 ? 'Requires attention' : 'No pending items'}
+          trendPositive={null}
         />
         <StatsCard
           title="Clinical Specialties"

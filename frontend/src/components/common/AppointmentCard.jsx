@@ -64,7 +64,7 @@ export const AppointmentCard = ({
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-bold text-slate-900 truncate">{appointment.patientName}</h4>
                   <span className="text-2xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
-                    {appointment.patientGender}, {appointment.patientAge || 30}y
+                    {appointment.patientGender || 'Patient'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-slate-500 mt-1 truncate">

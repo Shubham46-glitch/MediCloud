@@ -1,36 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Clock, AlertCircle } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { useApp } from '../../context/AppContext';
 import { formatDate } from '../../utils/formatters';
 
+const rescheduleDate = new Date();
+const MIN_RESCHEDULE_DATE = new Date(rescheduleDate.getTime() - rescheduleDate.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
 export const RescheduleModal = ({ isOpen, onClose, appointment }) => {
   const { rescheduleAppointment, doctors, appointments } = useApp();
 
-  const [date, setDate] = useState('');
-  const [selectedSlot, setSelectedSlot] = useState('');
+  const [date, setDate] = useState(appointment?.date || '');
+  const [selectedSlot, setSelectedSlot] = useState(appointment?.time || '');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Find the doctor for available slots
   const doctor = doctors.find((d) => d.id === appointment?.doctorId);
-  const availableSlots = doctor?.availableSlots || [
-    '09:00 AM',
-    '10:00 AM',
-    '11:30 AM',
-    '02:00 PM',
-    '03:30 PM',
-    '04:30 PM'
-  ];
-
-  useEffect(() => {
-    if (isOpen && appointment) {
-      setDate(appointment.date);
-      setSelectedSlot(appointment.time);
-      setError('');
-    }
-  }, [isOpen, appointment]);
+  const availableSlots = doctor?.availableSlots || [];
 
   if (!appointment) return null;
 
@@ -46,7 +34,7 @@ export const RescheduleModal = ({ isOpen, onClose, appointment }) => {
     );
   };
 
-  const handleReschedule = (e) => {
+  const handleReschedule = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -68,16 +56,23 @@ export const RescheduleModal = ({ isOpen, onClose, appointment }) => {
       return;
     }
 
+    const dayName = new Date(`${date}T12:00:00`).toLocaleDateString('en-US', { weekday: 'long' });
+    if (doctor?.availableDays?.length && !doctor.availableDays.includes(dayName)) {
+      setError(`This doctor is not available on ${dayName}.`);
+      return;
+    }
+    if (doctor?.availableSlots?.length && !doctor.availableSlots.includes(selectedSlot)) {
+      setError('Choose a time currently listed in this doctor’s availability.');
+      return;
+    }
     setIsSubmitting(true);
-    setTimeout(() => {
-      const result = rescheduleAppointment(appointment.id, date, selectedSlot);
+    try {
+      const result = await rescheduleAppointment(appointment.id, date, selectedSlot);
+      if (result.success && result.appointment) onClose();
+      else setError(result.error || 'The appointment could not be rescheduled.');
+    } finally {
       setIsSubmitting(false);
-      if (result.success) {
-        onClose();
-      } else {
-        setError(result.error);
-      }
-    }, 350);
+    }
   };
 
   return (
@@ -96,7 +91,7 @@ export const RescheduleModal = ({ isOpen, onClose, appointment }) => {
           <input
             type="date"
             value={date}
-            min={new Date().toISOString().split('T')[0]}
+            min={MIN_RESCHEDULE_DATE}
             onChange={(e) => {
               setDate(e.target.value);
               setError('');
@@ -111,7 +106,7 @@ export const RescheduleModal = ({ isOpen, onClose, appointment }) => {
             Select New Time Slot
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {availableSlots.map((slot) => {
+            {availableSlots.length ? availableSlots.map((slot) => {
               const booked = isSlotBooked(slot);
               const isSelected = selectedSlot === slot && !booked;
 
@@ -138,7 +133,7 @@ export const RescheduleModal = ({ isOpen, onClose, appointment }) => {
                   </div>
                 </button>
               );
-            })}
+            }) : <p className="col-span-3 text-sm text-slate-600">No availability has been configured for this doctor.</p>}
           </div>
         </div>
 

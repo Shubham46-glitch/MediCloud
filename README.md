@@ -95,10 +95,10 @@ The default `.env` values work for local development without any changes — all
 **Frontend:**
 ```bash
 cd frontend
-cp .env.example .env
+cp .env.example .env.local
 ```
 
-The default `VITE_API_URL=http://localhost:5000` is correct for local development.
+Set `VITE_API_URL=http://localhost:5000` in `frontend/.env.local` for local development. For Vercel, configure `VITE_API_URL` in Project Settings → Environment Variables to point to the deployed API. Vite embeds this value at build time, so changes require a new deployment.
 
 ### 3. Start the backend
 
